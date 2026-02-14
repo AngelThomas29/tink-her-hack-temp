@@ -6,39 +6,55 @@ import path from 'path';
 import child_process from 'child_process';
 import { env } from 'process';
 
-const baseFolder =
-    env.APPDATA !== undefined && env.APPDATA !== ''
-        ? `${env.APPDATA}/ASP.NET/https`
-        : `${env.HOME}/.aspnet/https`;
+let https = false;
+let target = 'http://localhost:5000';
 
-const certificateName = "internship.client";
-const certFilePath = path.join(baseFolder, `${certificateName}.pem`);
-const keyFilePath = path.join(baseFolder, `${certificateName}.key`);
+// Only configure HTTPS and create certificates for development
+if (process.env.NODE_ENV !== 'production') {
+    const baseFolder =
+        env.APPDATA !== undefined && env.APPDATA !== ''
+            ? `${env.APPDATA}/ASP.NET/https`
+            : `${env.HOME}/.aspnet/https`;
 
-if (!fs.existsSync(baseFolder)) {
-    fs.mkdirSync(baseFolder, { recursive: true });
-}
+    const certificateName = "internship.client";
+    const certFilePath = path.join(baseFolder, `${certificateName}.pem`);
+    const keyFilePath = path.join(baseFolder, `${certificateName}.key`);
 
-if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
-    if (0 !== child_process.spawnSync('dotnet', [
-        'dev-certs',
-        'https',
-        '--export-path',
-        certFilePath,
-        '--format',
-        'Pem',
-        '--no-password',
-    ], { stdio: 'inherit' }).status) {
-        throw new Error("Could not create certificate.");
+    if (!fs.existsSync(baseFolder)) {
+        fs.mkdirSync(baseFolder, { recursive: true });
     }
-}
 
-const target =
-    env.ASPNETCORE_HTTPS_PORT
-        ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
-        : env.ASPNETCORE_URLS
-            ? env.ASPNETCORE_URLS.split(';')[0]
-            : 'https://localhost:7274';
+    if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
+        if (0 !== child_process.spawnSync('dotnet', [
+            'dev-certs',
+            'https',
+            '--export-path',
+            certFilePath,
+            '--format',
+            'Pem',
+            '--no-password',
+        ], { stdio: 'inherit' }).status) {
+            console.warn("Could not create certificate. Proceeding without HTTPS.");
+        } else {
+            https = {
+                cert: fs.readFileSync(certFilePath),
+                key: fs.readFileSync(keyFilePath)
+            };
+        }
+    } else {
+        https = {
+            cert: fs.readFileSync(certFilePath),
+            key: fs.readFileSync(keyFilePath)
+        };
+    }
+
+    target =
+        env.ASPNETCORE_HTTPS_PORT
+            ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
+            : env.ASPNETCORE_URLS
+                ? env.ASPNETCORE_URLS.split(';')[0]
+                : 'https://localhost:7274';
+}
 
 export default defineConfig({
     plugins: [plugin()],
@@ -61,9 +77,6 @@ export default defineConfig({
             }
         },
         port: parseInt(env.DEV_SERVER_PORT || '56364'),
-        https: {
-            key: fs.readFileSync(keyFilePath),
-            cert: fs.readFileSync(certFilePath),
-        }
+        ...(https && { https })
     }
 });
