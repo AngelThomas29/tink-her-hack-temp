@@ -2,15 +2,14 @@
   <img src="./img.png" alt="Project Banner" width="100%">
 </p>
 
-# [Project Name] 🎯
+# mini Internship tracker
 
 ## Basic Details
 
-### Team Name: [Name]
+### Team Name:Angel Thomas N's Team
 
 ### Team Members
-- Member 1: [Name] - [College]
-- Member 2: [Name] - [College]
+- Member 1: Angel Thomas N:-Jyothi Engineering college
 
 ### Hosted Project Link
 [mention your project hosted link here]
